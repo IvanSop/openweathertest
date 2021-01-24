@@ -14,12 +14,21 @@ public class WeatherData {
     private long id;
 
     @ManyToOne
-    @JoinColumn(name = "cityId")
+    @JoinColumn(name = "cityId", nullable = false)
     private City city;
 
     private ZonedDateTime time;
 
     private Double temperature;
+
+    public WeatherData() {
+    }
+
+    public WeatherData(City city, ZonedDateTime time, Double temperature) {
+        this.city = city;
+        this.time = time;
+        this.temperature = temperature;
+    }
 
     public long getId() {
         return id;

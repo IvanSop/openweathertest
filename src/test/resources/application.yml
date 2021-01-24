@@ -1,8 +1,8 @@
 spring:
   profiles:
-    active: production
+    active: test
 weather:
   cities:
-    - Moscow
     - Novi Sad
-    - Dubai
+    - New York
+    - London

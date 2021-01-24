@@ -6,6 +6,9 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class City {
@@ -15,6 +18,9 @@ public class City {
     private long id;
 
     private String name;
+
+    @OneToMany(mappedBy = "city")
+    private List<WeatherData> weatherDataList = new ArrayList<>();
 
     public City() {
     }
@@ -37,6 +43,14 @@ public class City {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public List<WeatherData> getWeatherDataList() {
+        return weatherDataList;
+    }
+
+    public void setWeatherDataList(List<WeatherData> weatherDataList) {
+        this.weatherDataList = weatherDataList;
     }
 
     @Override

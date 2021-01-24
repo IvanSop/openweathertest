@@ -5,59 +5,63 @@ import com.ivansop.weather.model.City;
 import com.ivansop.weather.model.WeatherData;
 import com.ivansop.weather.rest.OpenWeatherRest;
 import com.ivansop.weather.rest.dto.OpenWeatherApiResult;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.ivansop.weather.util.DateUtil;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Processes and saves city data and fetched data from open weather api.
+ */
 @Service
 public class OpenWeatherService {
 
-    @Autowired
-    private OpenWeatherRest openWeatherRest;
+    private final OpenWeatherRest openWeatherRest;
+    private final WeatherProperties weatherProperties;
+    private final CityService cityService;
+    private final WeatherDataService weatherDataService;
 
-    @Autowired
-    private WeatherProperties weatherProperties;
+    public OpenWeatherService(OpenWeatherRest openWeatherRest, WeatherProperties weatherProperties, CityService cityService, WeatherDataService weatherDataService) {
+        this.openWeatherRest = openWeatherRest;
+        this.weatherProperties = weatherProperties;
+        this.cityService = cityService;
+        this.weatherDataService = weatherDataService;
+    }
 
-    @Autowired
-    private CityService cityService;
-
-    @Autowired
-    private WeatherDataService weatherDataService;
-
+    /**
+     * Creates city entities and fetches temperature data.
+     */
     @PostConstruct
     public void initializeData() {
         final Set<String> cityNames = weatherProperties.getCities();
-        final List<City> createdCities = cityService.createBulk(cityNames);
 
-        final List<WeatherData> allWeatherData = createdCities.stream()
-                .map(city -> {
-                    final OpenWeatherApiResult result = openWeatherRest.get5DayForecast(city.getName());
-                    final List<WeatherData> weatherDataList = result.getList().stream()
-                            .map(openWeatherItemDto -> {
-                                final double temperature = openWeatherItemDto.getDetails().getTemperature();
-                                final long timestamp = openWeatherItemDto.getTimestamp();
-                                final WeatherData weatherData = new WeatherData();
-                                weatherData.setCity(city);
-                                weatherData.setTemperature(temperature);
-                                weatherData.setTime(ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.of("UTC")));
-                                return weatherData;
-                            })
-                            .collect(Collectors.toList());
+        cityNames.forEach(cityName -> {
+            try {
+                final OpenWeatherApiResult result = openWeatherRest.get5DayForecast(cityName);
+                final City city = cityService.create(cityName);
+                final List<WeatherData> weatherDataForCity = createWeatherDataFromDto(result, city);
+                weatherDataService.saveAll(weatherDataForCity);
+            } catch (Exception e) {
+                System.out.println("Failed to fetch data for city " + cityName);
+                e.printStackTrace();
+            }
+        });
+    }
 
-                    return weatherDataList;
+    private List<WeatherData> createWeatherDataFromDto(OpenWeatherApiResult result, City city) {
+        return result.getList().stream()
+                .map(item -> {
+                    final double temperature = item.getDetails().getTemperature();
+                    final long timestamp = item.getTimestamp();
+                    final WeatherData weatherData = new WeatherData();
+                    weatherData.setCity(city);
+                    weatherData.setTemperature(temperature);
+                    weatherData.setTime(DateUtil.toZDT(timestamp));
+                    return weatherData;
                 })
-                .flatMap(Collection::stream)
                 .collect(Collectors.toList());
-
-        weatherDataService.saveAll(allWeatherData);
     }
 }

@@ -5,6 +5,7 @@ import com.ivansop.weather.repository.CityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -12,19 +13,26 @@ import java.util.stream.Collectors;
 @Service
 public class CityService {
 
-    @Autowired
-    private CityRepository cityRepository;
+    private final CityRepository cityRepository;
+
+    public CityService(CityRepository cityRepository) {
+        this.cityRepository = cityRepository;
+    }
 
     public City create(String cityName) {
         final City city = new City(cityName);
         return cityRepository.save(city);
     }
 
-    public List<City> createBulk(Set<String> cityNames) {
-        final List<City> cities = cityNames.stream()
-                .map(City::new)
-                .collect(Collectors.toList());
+    public List<City> list() {
+        return cityRepository.findAll();
+    }
 
-        return cityRepository.saveAll(cities);
+    public List<City> listByIdIn(Collection<Long> ids) {
+        return cityRepository.findByIdIn(ids);
+    }
+
+    public List<City> listByNameIn(Collection<String> names) {
+        return cityRepository.findByNameIn(names);
     }
 }
