@@ -1,1 +1,8 @@
-
+spring:
+  profiles:
+    active: production
+weather:
+  cities:
+    - Novi Sad
+    - Belgrade
+    - London
